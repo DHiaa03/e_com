@@ -1,52 +1,123 @@
-import React, { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useEffect, useMemo, useState } from 'react';
+import { Link, useParams } from 'react-router-dom';
+import { ArrowLeft, Banknote, Check, RefreshCw, Truck } from 'lucide-react';
+import Price from '../components/Price';
+import QuantityStepper from '../components/QuantityStepper';
+import { ErrorState } from '../components/States';
+import { useAsync } from '../hooks/useAsync';
+import { useTitle } from '../hooks/useTitle';
 import { useStore } from '../context/StoreContext';
 import { api } from '../services/api';
-import { ShoppingBag, ArrowLeft, ArrowRight, ShieldCheck, Truck, RotateCcw, Check } from 'lucide-react';
+import { pickLang } from '../context/i18n';
+import {
+  effectivePrice,
+  galleryImages,
+  hasDiscount,
+  resolveVariant,
+  stockLeft,
+  variantOptions,
+  variantsOf,
+} from '../services/product';
 
 export default function ProductDetails() {
   const { slug } = useParams();
-  const { lang, t, addToCart } = useStore();
-  const navigate = useNavigate();
-  const isRtl = lang === 'ar';
+  const { t, lang, addItem } = useStore();
+  const { data: product, error, loading, reload } = useAsync(
+    ({ signal }) => api.products.get(slug, { signal }),
+    [slug]
+  );
 
-  const [product, setProduct] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
-  const [selectedVariant, setSelectedVariant] = useState(null);
-  const [selectedImage, setSelectedImage] = useState(null);
+  const [size, setSize] = useState(null);
+  const [color, setColor] = useState(null);
   const [quantity, setQuantity] = useState(1);
-  const [addedAlert, setAddedAlert] = useState(false);
+  const [imageIndex, setImageIndex] = useState(0);
+  const [added, setAdded] = useState(false);
+  const [prompt, setPrompt] = useState('');
+
+  const variants = useMemo(() => variantsOf(product), [product]);
+  const options = useMemo(() => variantOptions(variants), [variants]);
+
+  /* Start on the first available size and colour instead of asking the
+     customer to guess what exists. */
+  useEffect(() => {
+    if (!product) return;
+    const { sizes, colors } = variantOptions(variantsOf(product));
+    const firstSize = sizes.find((entry) =>
+      variantsOf(product).some((variant) => variant.size === entry && variant.stock_quantity > 0)
+    );
+    const firstColor = colors.find((entry) =>
+      variantsOf(product).some(
+        (variant) => variant.color === entry.name && variant.stock_quantity > 0
+      )
+    );
+    setSize(firstSize ?? sizes[0] ?? null);
+    setColor(firstColor?.name ?? colors[0]?.name ?? null);
+    setImageIndex(0);
+  }, [product]);
 
   useEffect(() => {
-    async function loadProduct() {
-      setLoading(true);
-      try {
-        const data = await api.getProduct(slug);
-        setProduct(data);
-        if (data.variants && data.variants.length > 0) {
-          setSelectedVariant(data.variants[0]);
-        }
-        if (data.images && data.images.length > 0) {
-          setSelectedImage(data.images[0].image_url);
-        } else {
-          setSelectedImage('/assets/logo.png');
-        }
-      } catch (err) {
-        setError(err.message || 'Product not found');
-      } finally {
-        setLoading(false);
-      }
-    }
-    loadProduct();
-  }, [slug]);
+    if (!added) return undefined;
+    const timer = setTimeout(() => setAdded(false), 2600);
+    return () => clearTimeout(timer);
+  }, [added]);
 
-  if (loading) {
+  const name = pickLang(product, 'name', lang);
+  const description = pickLang(product, 'description', lang);
+  const images = useMemo(() => (product ? galleryImages(product) : []), [product]);
+  const { variant, status } = useMemo(
+    () => resolveVariant(product, size, color),
+    [product, size, color]
+  );
+
+  useTitle(name || t('productDetails'));
+
+  const sizeAvailable = (entry) =>
+    variants.some(
+      (item) =>
+        item.size === entry &&
+        (!color || item.color === color) &&
+        (item.stock_quantity ?? 0) > 0
+    );
+
+  const colorAvailable = (entry) =>
+    variants.some(
+      (item) =>
+        item.color === entry.name &&
+        (!size || item.size === size) &&
+        (item.stock_quantity ?? 0) > 0
+    );
+
+  const maxQuantity = status === 'exact' ? Math.max(1, stockLeft(variant)) : 99;
+  const lineTotal = useMemo(
+    () => (effectivePrice(product) + Number(variant?.additional_price || 0)) * quantity,
+    [product, variant, quantity]
+  );
+
+  const onAdd = () => {
+    if (status === 'missing') {
+      setPrompt(t('pickVariant'));
+      return;
+    }
+    if (status === 'out-of-stock') {
+      setPrompt(t('outOfStock'));
+      return;
+    }
+    setPrompt('');
+    addItem(product, variant, quantity);
+    setAdded(true);
+  };
+
+  if (loading && !product) {
     return (
-      <div className="min-h-screen bg-[#080808] flex items-center justify-center pt-20">
-        <div className="text-center text-[#c5a059] flex items-center gap-3 animate-pulse">
-          <span className="w-3 h-3 rounded-full bg-[#c5a059]"></span>
-          <span>{t('loading')}</span>
+      <div className="shell page">
+        <div className="skeleton skeleton--crumb" />
+        <div className="pdp">
+          <div className="skeleton skeleton-tile" />
+          <div className="stack">
+            <div className="skeleton skeleton--title" />
+            <div className="skeleton skeleton--text" />
+            <div className="skeleton skeleton--block" />
+          </div>
         </div>
       </div>
     );
@@ -54,212 +125,193 @@ export default function ProductDetails() {
 
   if (error || !product) {
     return (
-      <div className="min-h-screen bg-[#080808] flex items-center justify-center pt-20 px-4">
-        <div className="glass-card p-8 text-center max-w-md">
-          <h2 className="text-xl font-bold text-white mb-2">{lang === 'ar' ? 'المنتج غير متوفر' : 'Product Not Found'}</h2>
-          <p className="text-sm text-gray-400 mb-6">{error}</p>
-          <button onClick={() => navigate('/catalog')} className="gold-button text-xs py-2 px-6">
-            {lang === 'ar' ? 'العودة للكتالوج' : 'Back to Catalog'}
-          </button>
+      <div className="shell page">
+        <Link className="back-link" to="/catalog">
+          <ArrowLeft size={16} aria-hidden="true" />
+          {t('backToStore')}
+        </Link>
+        <div className="mt-5">
+          {error ? (
+            <ErrorState error={error} onRetry={reload} />
+          ) : (
+            <div className="state">
+              <h3>{t('productGoneTitle')}</h3>
+              <p>{t('productGoneBody')}</p>
+              <Link className="btn btn--ghost" to="/catalog">
+                {t('backToStore')}
+              </Link>
+            </div>
+          )}
         </div>
       </div>
     );
   }
 
-  const basePrice = Number(product.discount_price || product.base_price);
-  const variantAdditional = Number(selectedVariant?.additional_price || 0);
-  const currentPrice = basePrice + variantAdditional;
-  const hasDiscount = !!product.discount_price;
-
-  const handleAddToCart = () => {
-    addToCart(product, selectedVariant, quantity);
-    setAddedAlert(true);
-    setTimeout(() => setAddedAlert(false), 2500);
-  };
-
-  const handleDirectBuy = () => {
-    addToCart(product, selectedVariant, quantity);
-    navigate('/checkout');
-  };
-
   return (
-    <div className="min-h-screen bg-[#080808] pt-28 pb-20">
-      <div className="max-w-7xl mx-auto px-4 md:px-8">
-        {/* Navigation breadcrumb */}
-        <button
-          onClick={() => navigate(-1)}
-          className="inline-flex items-center gap-2 text-xs text-gray-400 hover:text-white mb-8 transition-colors"
-        >
-          {isRtl ? <ArrowRight className="w-4 h-4" /> : <ArrowLeft className="w-4 h-4" />}
-          <span>{lang === 'ar' ? 'رجوع' : 'Back'}</span>
-        </button>
+    <div className="shell">
+      <Link className="back-link mt-5" to="/catalog">
+        <ArrowLeft size={16} aria-hidden="true" />
+        {t('backToStore')}
+      </Link>
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-start">
-          {/* Gallery Side */}
-          <div className="space-y-4">
-            <div className="h-[480px] md:h-[580px] rounded-2xl overflow-hidden glass-panel border border-white/10 relative bg-neutral-950">
-              <img
-                src={selectedImage}
-                alt={lang === 'ar' ? product.name_ar : product.name_en}
-                className="w-full h-full object-cover object-center"
-              />
-              {hasDiscount && (
-                <span className="absolute top-4 start-4 bg-red-600 text-white text-xs font-bold px-3 py-1 rounded-full shadow-lg">
-                  {lang === 'ar' ? 'تخفيض حصري' : 'Special Offer'}
-                </span>
-              )}
+      <div className="pdp">
+        <div className="gallery">
+          <div className="gallery__main">
+            <img className="gallery__img" src={images[imageIndex]} alt={name} decoding="async" />
+            {hasDiscount(product) ? (
+              <span className="tile__badges">
+                <span className="badge badge--sale">{t('navSale')}</span>
+              </span>
+            ) : null}
+          </div>
+
+          {images.length > 1 ? (
+            <div className="gallery__thumbs">
+              {images.map((url, index) => (
+                <button
+                  key={url}
+                  type="button"
+                  className="gallery__thumb"
+                  aria-current={index === imageIndex}
+                  aria-label={`${name} — ${index + 1}`}
+                  onClick={() => setImageIndex(index)}
+                >
+                  <img src={url} alt="" loading="lazy" decoding="async" />
+                </button>
+              ))}
             </div>
+          ) : null}
+        </div>
 
-            {/* Thumbnail selector */}
-            {product.images && product.images.length > 1 && (
-              <div className="flex items-center gap-3 overflow-x-auto pb-2">
-                {product.images.map((img) => (
+        <div className="pdp__info">
+          <h1 className="pdp__title">{name}</h1>
+          <Price product={product} className="price--lg" />
+          {description ? <p className="pdp__desc">{description}</p> : null}
+
+          {options.sizes.length > 0 ? (
+            <div className="variant-group">
+              <div className="variant-group__head">
+                <span className="label">{t('size')}</span>
+                {size ? <span className="variant-group__value">{size}</span> : null}
+              </div>
+              <div className="variant-group__options">
+                {options.sizes.map((entry) => (
                   <button
-                    key={img.id}
-                    onClick={() => setSelectedImage(img.image_url)}
-                    className={`w-20 h-20 rounded-lg overflow-hidden border-2 transition-all flex-shrink-0 ${
-                      selectedImage === img.image_url ? 'border-[#c5a059] scale-95' : 'border-transparent opacity-60 hover:opacity-100'
-                    }`}
+                    key={entry}
+                    type="button"
+                    className="swatch"
+                    aria-pressed={size === entry}
+                    disabled={!sizeAvailable(entry)}
+                    onClick={() => {
+                      setSize(entry);
+                      setPrompt('');
+                    }}
                   >
-                    <img src={img.image_url} alt="thumbnail" className="w-full h-full object-cover" />
+                    {entry}
                   </button>
                 ))}
               </div>
-            )}
+            </div>
+          ) : null}
+
+          {options.colors.length > 0 ? (
+            <div className="variant-group">
+              <div className="variant-group__head">
+                <span className="label">{t('color')}</span>
+                {color ? <span className="variant-group__value">{color}</span> : null}
+              </div>
+              <div className="variant-group__options">
+                {options.colors.map((entry) => (
+                  <button
+                    key={entry.name}
+                    type="button"
+                    className="swatch"
+                    aria-pressed={color === entry.name}
+                    disabled={!colorAvailable(entry)}
+                    onClick={() => {
+                      setColor(entry.name);
+                      setPrompt('');
+                    }}
+                  >
+                    {entry.code ? (
+                      <span
+                        className="swatch__dot"
+                        style={{ background: entry.code }}
+                        aria-hidden="true"
+                      />
+                    ) : null}
+                    {entry.name}
+                  </button>
+                ))}
+              </div>
+            </div>
+          ) : null}
+
+          <div className="variant-group">
+            <div className="variant-group__head">
+              <span className="label">{t('quantity')}</span>
+              <span className="variant-group__value">
+                {status === 'out-of-stock'
+                  ? t('outOfStock')
+                  : status === 'exact' && stockLeft(variant) <= 5
+                    ? t('unitsLeft', { n: stockLeft(variant) })
+                    : status === 'exact'
+                      ? t('inStock')
+                      : ''}
+              </span>
+            </div>
+            <QuantityStepper value={quantity} max={maxQuantity} onChange={setQuantity} />
           </div>
 
-          {/* Details Side */}
-          <div className="space-y-6">
-            <div>
-              <span className="text-xs uppercase font-semibold tracking-wider text-[#c5a059]">
-                {product.gender_section === 'men' ? t('navMen') : t('navWomen')} · {product.category?.name_ar || ''}
-              </span>
-              <h1 className="text-3xl md:text-4xl font-bold text-white mt-1 mb-3">
-                {lang === 'ar' ? product.name_ar : product.name_en}
-              </h1>
+          {prompt ? (
+            <p className="error-text" role="status">
+              {prompt}
+            </p>
+          ) : null}
 
-              {/* Price Display */}
-              <div className="flex items-baseline gap-3">
-                <span className="text-3xl font-extrabold text-[#c5a059]">
-                  {currentPrice} {t('currency')}
-                </span>
-                {hasDiscount && (
-                  <span className="text-sm text-gray-500 line-through">
-                    {Number(product.base_price) + variantAdditional} {t('currency')}
-                  </span>
-                )}
-              </div>
+          {added ? (
+            <div className="notice notice--info" role="status">
+              <span>{t('addedToBag')}</span>
+              <Link className="section__more" to="/cart">
+                {t('bagTitle')}
+              </Link>
             </div>
+          ) : null}
 
-            {/* Product Description */}
-            <div className="border-t border-white/10 pt-4">
-              <p className="text-sm md:text-base text-gray-300 leading-relaxed">
-                {lang === 'ar' ? product.description_ar : product.description_en}
-              </p>
+          <div className="pdp__facts">
+            <div className="pdp__fact">
+              <Banknote size={16} aria-hidden="true" />
+              <span>{t('trustCodBody')}</span>
             </div>
-
-            {/* Variants Picker (Size & Color) */}
-            {product.variants && product.variants.length > 0 && (
-              <div className="space-y-4 border-t border-white/10 pt-4">
-                <label className="block text-xs font-semibold uppercase tracking-wider text-gray-300">
-                  {t('size')} / {t('color')}
-                </label>
-                <div className="flex flex-wrap gap-2.5">
-                  {product.variants.map((v) => {
-                    const isSelected = selectedVariant?.id === v.id;
-                    return (
-                      <button
-                        key={v.id}
-                        onClick={() => setSelectedVariant(v)}
-                        className={`px-4 py-2.5 rounded-lg text-xs font-semibold border transition-all flex items-center gap-2 min-h-[44px] ${
-                          isSelected
-                            ? 'bg-[#c5a059] text-black border-[#c5a059] shadow-md'
-                            : 'bg-white/5 text-gray-300 border-white/10 hover:border-white/30'
-                        }`}
-                      >
-                        {v.color_code && (
-                          <span
-                            className="w-3 h-3 rounded-full border border-black/30"
-                            style={{ backgroundColor: v.color_code }}
-                          />
-                        )}
-                        <span>{v.size ? `${v.size}` : ''} {v.color ? `· ${v.color}` : ''}</span>
-                        {v.additional_price > 0 && (
-                          <span className="text-[10px] opacity-75">
-                            (+{v.additional_price} {t('currency')})
-                          </span>
-                        )}
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-            )}
-
-            {/* Quantity Selector */}
-            <div className="flex items-center gap-4 border-t border-white/10 pt-4">
-              <span className="text-xs font-semibold uppercase tracking-wider text-gray-300">
-                {lang === 'ar' ? 'الكمية' : 'Quantity'}
-              </span>
-              <div className="flex items-center glass-panel rounded-lg border border-white/10 overflow-hidden">
-                <button
-                  onClick={() => setQuantity((q) => Math.max(1, q - 1))}
-                  className="px-3 py-2 text-gray-300 hover:text-white hover:bg-white/10 text-base"
-                >
-                  -
-                </button>
-                <span className="px-4 py-2 text-sm font-bold text-white min-w-[36px] text-center">
-                  {quantity}
-                </span>
-                <button
-                  onClick={() => setQuantity((q) => q + 1)}
-                  className="px-3 py-2 text-gray-300 hover:text-white hover:bg-white/10 text-base"
-                >
-                  +
-                </button>
-              </div>
+            <div className="pdp__fact">
+              <Truck size={16} aria-hidden="true" />
+              <span>{t('trustDeliveryBody')}</span>
             </div>
-
-            {/* Action Buttons */}
-            <div className="pt-2 flex flex-col sm:flex-row gap-3">
-              <button
-                onClick={handleAddToCart}
-                className="gold-button flex-1 py-3.5 text-sm"
-              >
-                <ShoppingBag className="w-4 h-4" />
-                <span>{t('addToCart')}</span>
-              </button>
-
-              <button
-                onClick={handleDirectBuy}
-                className="glass-outline-button flex-1 py-3.5 text-sm font-semibold hover:bg-white hover:text-black"
-              >
-                <span>{lang === 'ar' ? 'شراء فوري (الدفع عند الاستلام)' : 'Buy Now (Cash on Delivery)'}</span>
-              </button>
-            </div>
-
-            {/* Add Alert */}
-            {addedAlert && (
-              <div className="p-3 rounded-lg bg-emerald-950/80 border border-emerald-500/40 text-emerald-300 text-xs flex items-center gap-2 animate-in fade-in duration-200">
-                <Check className="w-4 h-4 text-emerald-400" />
-                <span>{lang === 'ar' ? 'تمت إضافة القطعة بنجاح إلى حقيبة التسوق!' : 'Piece added to your shopping bag!'}</span>
-              </div>
-            )}
-
-            {/* Trust Assurances */}
-            <div className="border-t border-white/10 pt-6 grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs text-gray-400">
-              <div className="flex items-center gap-2.5">
-                <Truck className="w-4 h-4 text-[#c5a059]" />
-                <span>{lang === 'ar' ? 'الدفع نقداً عند التوصيل والمعاينة' : 'Cash on delivery with full inspection'}</span>
-              </div>
-              <div className="flex items-center gap-2.5">
-                <ShieldCheck className="w-4 h-4 text-[#c5a059]" />
-                <span>{lang === 'ar' ? 'خامات إيطالية أصلية ومضمونة' : '100% Genuine Italian craftsmanship'}</span>
-              </div>
+            <div className="pdp__fact">
+              <RefreshCw size={16} aria-hidden="true" />
+              <span>{t('trustExchangeBody')}</span>
             </div>
           </div>
+
+          {product.category ? (
+            <p className="small muted">
+              {t('subcategory')}: {pickLang(product.category, 'name', lang)}
+            </p>
+          ) : null}
         </div>
       </div>
+
+      <div className="action-bar">
+        <span className="action-bar__total">
+          <span className="label">{t('total')}</span>
+          <Price amount={lineTotal} />
+        </span>
+        <button type="button" className="btn btn--primary btn--lg" onClick={onAdd}>
+          {added ? <Check size={18} aria-hidden="true" /> : null}
+          {added ? t('addedToBag') : t('addToBag')}
+        </button>
+      </div>
+      <div className="action-bar--spacer" />
     </div>
   );
 }

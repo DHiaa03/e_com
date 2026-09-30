@@ -1,115 +1,87 @@
-import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useState } from 'react';
+import { Link, Navigate, useNavigate } from 'react-router-dom';
+import { useTitle } from '../hooks/useTitle';
 import { useStore } from '../context/StoreContext';
 import { api } from '../services/api';
-import { Lock, Mail, ArrowRight, ArrowLeft } from 'lucide-react';
 
 export default function AdminLogin() {
-  const { lang, t, loginAdmin } = useStore();
+  const { t, isAdmin, signIn } = useStore();
   const navigate = useNavigate();
-  const isRtl = lang === 'ar';
-
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
+  const [busy, setBusy] = useState(false);
+  const [failure, setFailure] = useState(null);
 
-  const handleLogin = async (e) => {
-    e.preventDefault();
-    setError('');
-    setLoading(true);
+  useTitle(t('adminLoginTitle'));
 
+  if (isAdmin) return <Navigate to="/admin" replace />;
+
+  const submit = async (event) => {
+    event.preventDefault();
+    setBusy(true);
+    setFailure(null);
     try {
-      const data = await api.loginAdmin(email.trim(), password);
-      loginAdmin(data.access_token);
-      navigate('/admin');
-    } catch (err) {
-      setError(err.message || 'Invalid administrator credentials');
+      const data = await api.auth.login(email.trim(), password);
+      signIn(data.access_token);
+      navigate('/admin', { replace: true });
+    } catch (error) {
+      setFailure(error.message);
     } finally {
-      setLoading(false);
+      setBusy(false);
     }
   };
 
   return (
-    <div className="min-h-screen bg-[#060606] flex items-center justify-center px-4 py-20">
-      <div className="glass-panel max-w-md w-full p-8 md:p-10 rounded-2xl border border-white/10 space-y-6">
-        {/* Brand Header */}
-        <div className="text-center space-y-3">
-          <img src="/assets/logo.png" alt="BLACK ELEGANCE" className="h-14 w-auto mx-auto object-contain" />
-          <h1 className="text-xl md:text-2xl font-bold text-white tracking-wider">
-            {t('adminLoginTitle')}
-          </h1>
-          <p className="text-xs text-gray-400">
-            {lang === 'ar' ? 'سجّل الدخول بحساب الأدمن لإدارة المتجر والطلبات' : 'Sign in with administrator credentials'}
-          </p>
+    <div className="login-shell">
+      <form className="login-card" onSubmit={submit}>
+        <div className="login-card__brand">
+          <img src="/assets/logo.png" alt="" width="40" height="40" />
+          <span className="strong">{t('brandName')}</span>
         </div>
 
-        {error && (
-          <div className="p-3 rounded-lg bg-red-950/80 border border-red-500/40 text-red-300 text-xs text-center">
-            {error}
-          </div>
-        )}
-
-        <form onSubmit={handleLogin} className="space-y-4">
-          <div>
-            <label className="block text-xs font-semibold uppercase tracking-wider text-gray-300 mb-1.5">
-              {t('adminEmail')}
-            </label>
-            <div className="relative">
-              <Mail className="absolute top-3.5 start-3 w-4 h-4 text-gray-400" />
-              <input
-                type="email"
-                required
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="admin@blackelegance.com"
-                className="glass-input ps-10 text-sm"
-              />
-            </div>
-          </div>
-
-          <div>
-            <label className="block text-xs font-semibold uppercase tracking-wider text-gray-300 mb-1.5">
-              {t('adminPassword')}
-            </label>
-            <div className="relative">
-              <Lock className="absolute top-3.5 start-3 w-4 h-4 text-gray-400" />
-              <input
-                type="password"
-                required
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                placeholder="••••••••••••"
-                className="glass-input ps-10 text-sm"
-              />
-            </div>
-          </div>
-
-          <button
-            type="submit"
-            disabled={loading}
-            className="gold-button w-full py-3.5 text-sm font-semibold mt-2"
-          >
-            {loading ? (
-              <span>{t('loading')}</span>
-            ) : (
-              <>
-                <span>{t('loginBtn')}</span>
-                {isRtl ? <ArrowLeft className="w-4 h-4" /> : <ArrowRight className="w-4 h-4" />}
-              </>
-            )}
-          </button>
-        </form>
-
-        <div className="text-center pt-2">
-          <button
-            onClick={() => navigate('/')}
-            className="text-xs text-gray-500 hover:text-gray-300 transition-colors"
-          >
-            {lang === 'ar' ? 'العودة لواجهة المتجر' : 'Return to Storefront'}
-          </button>
+        <div className="stack">
+          <h1 className="page__title">{t('adminLoginTitle')}</h1>
+          <p className="small muted">{t('adminLoginIntro')}</p>
         </div>
-      </div>
+
+        <div className="field">
+          <label htmlFor="admin-email">{t('adminEmail')}</label>
+          <input
+            id="admin-email"
+            type="email"
+            value={email}
+            onChange={(event) => setEmail(event.target.value)}
+            autoComplete="username"
+            required
+          />
+        </div>
+
+        <div className="field">
+          <label htmlFor="admin-password">{t('adminPassword')}</label>
+          <input
+            id="admin-password"
+            type="password"
+            value={password}
+            onChange={(event) => setPassword(event.target.value)}
+            autoComplete="current-password"
+            required
+          />
+        </div>
+
+        {failure ? (
+          <div className="notice notice--error" role="alert">
+            {failure}
+          </div>
+        ) : null}
+
+        <button type="submit" className="btn btn--primary btn--lg btn--block" disabled={busy}>
+          {busy ? t('adminSigningIn') : t('adminSignIn')}
+        </button>
+
+        <Link className="btn btn--quiet" to="/">
+          {t('adminViewStore')}
+        </Link>
+      </form>
     </div>
   );
 }

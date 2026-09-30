@@ -1,0 +1,459 @@
+/* =========================================================================
+   Admin — data-first screens. Colour carries status meaning; nothing else.
+   ========================================================================= */
+
+.admin-bar {
+  position: sticky;
+  top: 0;
+  z-index: 60;
+  background: var(--glass);
+  -webkit-backdrop-filter: blur(var(--blur)) saturate(150%);
+  backdrop-filter: blur(var(--blur)) saturate(150%);
+  border-bottom: 1px solid var(--glass-edge);
+}
+
+.admin-bar__inner {
+  display: flex;
+  align-items: center;
+  gap: var(--s4);
+  min-height: var(--header-h);
+}
+
+.admin-bar__who {
+  display: none;
+  margin-inline-start: auto;
+  font-size: var(--t-xs);
+  color: var(--mist);
+}
+
+@media (min-width: 700px) {
+  .admin-bar__who {
+    display: block;
+  }
+}
+
+.admin-tabs {
+  display: flex;
+  gap: var(--s2);
+  overflow-x: auto;
+  padding-block: var(--s4);
+  scrollbar-width: none;
+}
+
+.admin-tabs::-webkit-scrollbar {
+  display: none;
+}
+
+.stats {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--s4);
+  padding-block: var(--s5);
+}
+
+.stat {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s1);
+  padding: var(--s4) var(--s5);
+  background: var(--carbon);
+  border: 1px solid var(--graphite);
+  border-radius: var(--r);
+}
+
+.stat__value {
+  font-size: 1.4rem;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: var(--track-head);
+}
+
+@media (min-width: 900px) {
+  .stats {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+
+.panel {
+  padding: var(--s5);
+  background: var(--carbon);
+  border: 1px solid var(--graphite);
+  border-radius: var(--r);
+  margin-bottom: var(--s5);
+}
+
+.panel__head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--s3);
+  margin-bottom: var(--s5);
+}
+
+.panel__head h2 {
+  font-size: var(--t-h3);
+}
+
+.panel__head .btn,
+.panel__head .chip {
+  margin-inline-start: auto;
+}
+
+.panel__tools {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--s2);
+  align-items: center;
+  margin-inline-start: auto;
+}
+
+/* --- data rows ---------------------------------------------------------- */
+
+.data-list {
+  display: flex;
+  flex-direction: column;
+}
+
+.data-row {
+  display: grid;
+  gap: var(--s3);
+  padding-block: var(--s5);
+  border-bottom: 1px solid var(--graphite);
+}
+
+.data-row:last-child {
+  border-bottom: 0;
+}
+
+.data-row__title {
+  font-size: var(--t-sm);
+  font-weight: 600;
+}
+
+.data-row__meta {
+  font-size: var(--t-xs);
+  color: var(--mist);
+}
+
+.data-row__fields {
+  display: grid;
+  gap: var(--s2);
+}
+
+.data-pair {
+  display: flex;
+  gap: var(--s2);
+  justify-content: space-between;
+  font-size: var(--t-sm);
+}
+
+.data-pair dt {
+  color: var(--mist);
+}
+
+.data-pair dd {
+  margin: 0;
+  text-align: end;
+}
+
+.data-row__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--s2);
+}
+
+@media (min-width: 900px) {
+  .data-row {
+    grid-template-columns: minmax(0, 1.1fr) minmax(0, 1.4fr) auto;
+    align-items: start;
+    gap: var(--s5);
+  }
+
+  .data-row--product {
+    grid-template-columns: 72px minmax(0, 1fr) minmax(0, 1fr) auto;
+  }
+
+  .data-row__fields {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: var(--s2) var(--s5);
+  }
+}
+
+.status {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--s2);
+  font-size: var(--t-xs);
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.status::before {
+  content: '';
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: currentColor;
+}
+
+.status--pending {
+  color: var(--st-pending);
+}
+
+.status--confirmed {
+  color: var(--st-confirmed);
+}
+
+.status--shipped {
+  color: var(--st-shipped);
+}
+
+.status--delivered {
+  color: var(--st-delivered);
+}
+
+.status--cancelled {
+  color: var(--st-cancelled);
+}
+
+.status-select {
+  min-height: 40px;
+  padding: var(--s2) var(--s3);
+  background: var(--carbon-2);
+  border: 1px solid var(--graphite);
+  border-radius: var(--r-sm);
+  font-size: var(--t-sm);
+}
+
+.mini-thumb {
+  width: 72px;
+  height: 90px;
+  object-fit: cover;
+  border-radius: var(--r-xs);
+  background: var(--carbon-2);
+}
+
+/* --- forms -------------------------------------------------------------- */
+
+.form-grid {
+  display: grid;
+  gap: var(--s4);
+}
+
+.form-grid__full {
+  grid-column: 1 / -1;
+}
+
+@media (min-width: 700px) {
+  .form-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: var(--s4) var(--s5);
+  }
+}
+
+.check {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--s3);
+  min-height: var(--tap);
+  font-size: var(--t-sm);
+  cursor: pointer;
+}
+
+.check input {
+  width: 20px;
+  height: 20px;
+  accent-color: var(--moon);
+}
+
+.form-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--s3);
+  padding-top: var(--s3);
+}
+
+/* --- image manager ------------------------------------------------------ */
+
+.uploader {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s4);
+}
+
+.uploader__row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--s3);
+  align-items: center;
+}
+
+.uploader__row input[type='file'] {
+  flex: 1 1 220px;
+  min-height: var(--tap);
+  padding: var(--s2);
+  background: var(--carbon-2);
+  border: 1px dashed var(--graphite);
+  border-radius: var(--r-sm);
+  font-size: var(--t-sm);
+}
+
+.thumbs {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(84px, 1fr));
+  gap: var(--s3);
+}
+
+.thumb-card {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s2);
+}
+
+.thumb-card img {
+  width: 100%;
+  aspect-ratio: 4 / 5;
+  object-fit: cover;
+  border-radius: var(--r-xs);
+  background: var(--carbon-2);
+}
+
+.thumb-card__bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--s2);
+  font-size: var(--t-xs);
+  color: var(--mist);
+}
+
+/* --- variant editor ----------------------------------------------------- */
+
+.variant-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s4);
+}
+
+.variant-edit {
+  display: grid;
+  gap: var(--s3);
+  padding: var(--s4);
+  border: 1px solid var(--graphite);
+  border-radius: var(--r-sm);
+  background: var(--carbon-2);
+}
+
+.variant-edit__fields {
+  display: grid;
+  gap: var(--s3);
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+@media (min-width: 900px) {
+  .variant-edit {
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: end;
+  }
+
+  .variant-edit__fields {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+
+/* --- admin login -------------------------------------------------------- */
+
+.login-shell {
+  display: flex;
+  justify-content: center;
+  padding: var(--s7) var(--gutter) var(--s8);
+}
+
+.login-card {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s5);
+  width: 100%;
+  max-width: 420px;
+  padding: var(--s6);
+  background: var(--carbon);
+  border: 1px solid var(--graphite);
+  border-radius: var(--r);
+}
+
+.login-card__brand {
+  display: flex;
+  align-items: center;
+  gap: var(--s3);
+}
+
+.login-card__brand img {
+  width: 40px;
+  height: 40px;
+  border-radius: var(--r-xs);
+}
+
+.banner {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--s3);
+  padding: var(--s4);
+  margin-bottom: var(--s5);
+  border: 1px solid var(--moon-line);
+  border-radius: var(--r-sm);
+  background: var(--moon-soft);
+  font-size: var(--t-sm);
+}
+
+.banner .btn {
+  margin-inline-start: auto;
+}
+
+.detail-block {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s2);
+  padding: var(--s4);
+  margin-top: var(--s3);
+  border: 1px solid var(--graphite);
+  border-radius: var(--r-sm);
+  background: var(--carbon-2);
+}
+
+/* --- pagination (admin lists) ------------------------------------------- */
+
+.pagination {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--s4);
+  padding-top: var(--s5);
+}
+
+/* Primary image gets the moon edge so it reads at a glance. */
+.thumb-card--primary img {
+  outline: 2px solid var(--moon);
+  outline-offset: 1px;
+}
+
+/* A form being edited inline inside a panel. */
+.form-block {
+  padding: var(--s5);
+  margin-bottom: var(--s5);
+  border: 1px solid var(--moon-line);
+  border-radius: var(--r);
+  background: var(--carbon-2);
+  display: flex;
+  flex-direction: column;
+  gap: var(--s5);
+}
+
+.form-block h3 {
+  font-size: var(--t-h3);
+}
+
+.form-block h4 {
+  font-size: var(--t-sm);
+  color: var(--mist);
+}

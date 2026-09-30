@@ -1,24 +1,34 @@
-import React from 'react';
-import { BrowserRouter, Routes, Route, useLocation } from 'react-router-dom';
-import { StoreProvider } from './context/StoreContext';
-import Navbar from './components/Navbar';
-import Footer from './components/Footer';
+import { Route, Routes, useLocation } from 'react-router-dom';
+import SiteHeader from './components/SiteHeader';
+import SiteFooter from './components/SiteFooter';
 import Home from './pages/Home';
 import Catalog from './pages/Catalog';
 import ProductDetails from './pages/ProductDetails';
 import Cart from './pages/Cart';
 import Checkout from './pages/Checkout';
 import AdminLogin from './pages/AdminLogin';
-import AdminDashboard from './pages/AdminDashboard';
+import AdminDashboard from './pages/admin/AdminDashboard';
+import NotFound from './pages/NotFound';
+import { useStore } from './context/StoreContext';
 
-function AppContent() {
+export default function App() {
   const location = useLocation();
-  const isAdminRoute = location.pathname.startsWith('/admin');
+  const { t } = useStore();
+  const isAdminArea = location.pathname.startsWith('/admin');
+  const isHome = location.pathname === '/';
 
   return (
-    <div className="flex flex-col min-h-screen bg-[#080808] text-white">
-      {!isAdminRoute && <Navbar />}
-      <main className="flex-1">
+    <div className="site">
+      {!isAdminArea ? (
+        <>
+          <a className="skip-link" href="#main">
+            {t('skipToContent')}
+          </a>
+          <SiteHeader />
+        </>
+      ) : null}
+
+      <main id="main" className={`site-main${isHome ? ' site-main--flush' : ''}`}>
         <Routes>
           <Route path="/" element={<Home />} />
           <Route path="/catalog" element={<Catalog />} />
@@ -27,21 +37,11 @@ function AppContent() {
           <Route path="/checkout" element={<Checkout />} />
           <Route path="/admin/login" element={<AdminLogin />} />
           <Route path="/admin" element={<AdminDashboard />} />
-          {/* Catch-all */}
-          <Route path="*" element={<Home />} />
+          <Route path="*" element={<NotFound />} />
         </Routes>
       </main>
-      {!isAdminRoute && <Footer />}
-    </div>
-  );
-}
 
-export default function App() {
-  return (
-    <StoreProvider>
-      <BrowserRouter>
-        <AppContent />
-      </BrowserRouter>
-    </StoreProvider>
+      {!isAdminArea ? <SiteFooter /> : null}
+    </div>
   );
 }

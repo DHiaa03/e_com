@@ -1,0 +1,115 @@
+/* =========================================================================
+   BLACK ELEGANCE — design tokens
+   Direction: "Atelier Lumière". Paper is the material: depth comes from
+   layered planes (paper → white → glass) and a single ink accent, never from
+   grey drop shadows. Two families, one per script — no serif. The reserved
+   colour (wine) stays the only commercial signal: a price drop.
+   Token names are kept so every component works unchanged; values carry the
+   light theme.
+   ========================================================================= */
+
+:root {
+  /* --- planes (depth) --- */
+  --noir: #f7f5f1; /* page: warm paper, matches the logo ground */
+  --carbon: #ffffff; /* raised surface */
+  --carbon-2: #efede7; /* inset field */
+  --graphite: #e0ddd4; /* hairline */
+
+  /* --- ink --- */
+  --pearl: #17181b; /* primary text: soft black */
+  --mist: #5d5e63; /* secondary text, 5.9:1 on paper */
+  --dim: #98989d; /* tertiary text, decorative only */
+
+  /* --- accent: ink. Interaction only: active, focus, primary action --- */
+  --moon: #1c2027;
+  --moon-soft: rgba(28, 32, 39, 0.07);
+  --moon-line: rgba(28, 32, 39, 0.28);
+
+  /* --- commercial signal: wine. Badge fill only, never body text (3.2:1) --- */
+  --wine: #93414b;
+  --wine-ink: #f7ebec;
+
+  /* --- order status system: colour carries meaning, nothing is decorative --- */
+  --st-pending: #8a8a90;
+  --st-confirmed: #5b6b7c;
+  --st-shipped: #3f6d96;
+  --st-delivered: #3f7d5c;
+  --st-cancelled: #93414b;
+  --danger: #b34548;
+
+  /* --- materials: floating chrome, content scrolls underneath --- */
+  --glass: rgba(255, 255, 255, 0.72);
+  --glass-strong: rgba(250, 249, 246, 0.92);
+  --glass-edge: rgba(23, 24, 27, 0.1);
+  --blur: 22px;
+
+  /* scrim only ever sits on imagery, so it stays dark in the light theme */
+  --scrim: rgba(5, 5, 5, 0.55);
+
+  /* --- geometry: a radius scale, so hierarchy is legible (not one radius) --- */
+  --r-xs: 8px;
+  --r-sm: 12px;
+  --r: 16px;
+  --r-lg: 22px;
+  --r-full: 999px;
+
+  /* one soft ambient shadow, reserved for surfaces that actually float */
+  --lift: 0 22px 60px -28px rgba(23, 24, 27, 0.28);
+
+  /* --- space --- */
+  --s1: 4px;
+  --s2: 8px;
+  --s3: 12px;
+  --s4: 16px;
+  --s5: 24px;
+  --s6: 32px;
+  --s7: 48px;
+  --s8: 64px;
+  --s9: 96px;
+
+  /* --- type --- */
+  --font: 'Archivo', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --font-ar: 'IBM Plex Sans Arabic', 'Archivo', system-ui, sans-serif;
+
+  --t-display: clamp(2.1rem, 7.2vw, 4.25rem);
+  --t-h2: clamp(1.45rem, 3.6vw, 2.15rem);
+  --t-h3: clamp(1.05rem, 2.2vw, 1.3rem);
+  --t-body: 1rem;
+  --t-sm: 0.875rem;
+  --t-xs: 0.8125rem;
+
+  --lh-tight: 1.04;
+  --lh-head: 1.15;
+  --lh-body: 1.6;
+  --lh-ar: 1.75;
+
+  /* tracking is size-specific: tighten as type grows, open up when it shrinks */
+  --track-display: -0.035em;
+  --track-head: -0.02em;
+  --track-small: 0.008em;
+
+  /* --- motion: one orchestrated moment, everything else answers input --- */
+  --ease: cubic-bezier(0.22, 0.61, 0.36, 1);
+  --fast: 120ms;
+  --mid: 220ms;
+  --slow: 420ms;
+
+  /* --- shell --- */
+  --shell: 1240px;
+  --gutter: 20px;
+  --tap: 44px;
+  --header-h: 60px;
+}
+
+@media (min-width: 768px) {
+  :root {
+    --gutter: 32px;
+    --header-h: 72px;
+  }
+}
+
+@media (min-width: 1200px) {
+  :root {
+    --gutter: 48px;
+  }
+}
